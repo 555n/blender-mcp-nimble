@@ -17,11 +17,21 @@ Plus one MCP prompt — `construct_blender_strategy` — a short default strateg
 
 ### Removed from upstream
 
+**Server side:**
 - **Asset marketplace tools** (17): PolyHaven (4), Sketchfab (4), Hyper3D Rodin (5), Hunyuan3D (4). `set_texture` is also gone — its Blender add-on handler is coupled to the PolyHaven download cache. For texture work, use `execute_blender_code` directly.
 - **Telemetry**: the entire `telemetry.py` / `telemetry_decorator.py` / `config.py` stack, including the Supabase phone-home and the screenshot-upload path. `supabase` and `tomli` runtime deps are dropped.
 - **`asset_creation_strategy()` prompt**: replaced with a marketplace-free variant.
 
-Result: ~1,860 lines of upstream Python collapsed to ~270, with `mcp` as the only runtime dep.
+**Add-on side:**
+- All marketplace handlers (PolyHaven download/search/categories, Sketchfab search/preview/download, Hyper3D Rodin job creation/polling/import, Hunyuan3D job creation/polling/import).
+- The hardcoded `RODIN_FREE_TRIAL_KEY` and the `Set Free Trial API Key` operator.
+- The telemetry-consent preferences pane and the `get_telemetry_consent` command handler.
+- The Terms-and-Conditions operator and link.
+- The `requests`, `hashlib`, `hmac`, `base64`, `zipfile`, `shutil`, `tempfile`, `os`, `re`, `datetime` imports — none used by the four core handlers.
+
+Result:
+- Server: ~1,860 lines of upstream Python → ~270, runtime dep `mcp` only.
+- Add-on: ~2,640 lines → ~360, no extra Python deps beyond Blender's bundled `bpy` / `mathutils`.
 
 ## Install
 
@@ -33,15 +43,24 @@ pip install -e .
 
 This installs a `blender-mcp-nimble` console script. The Python package is `blender_mcp_nimble` (distinct from upstream's `blender_mcp` so you can have both installed without shadowing).
 
-### Blender side
+### Blender add-on
 
-This server still talks to the **upstream Blender add-on** (`addon.py` from [ahujasid/blender-mcp](https://github.com/ahujasid/blender-mcp)) — install that into Blender as the upstream README describes:
+The Blender side ships in this repo as `blender_addon/blender_mcp_nimble_addon.py` — a single-file add-on, also forked and trimmed from upstream. ~360 lines (down from ~2,640). Drops the same things as the server: marketplace handlers, the hardcoded `RODIN_FREE_TRIAL_KEY`, telemetry consent UI, the `requests` dep.
 
-1. Download `addon.py` from the upstream repo.
-2. In Blender: `Edit → Preferences → Add-ons → Install` → select `addon.py`. Enable it.
-3. Open the 3D Viewport sidebar (press `N`), find the **BlenderMCP** tab, click **Connect to Claude**.
+**If you have the upstream add-on installed, uninstall it first:**
 
-The add-on's extra PolyHaven/Sketchfab/Hyper3D/Hunyuan3D handlers are simply unused by this server. A future release of `blender-mcp-nimble` will likely strip the add-on too.
+1. Blender → `Edit → Preferences → Add-ons`
+2. Search for `Blender MCP`, expand it, click `Remove`
+3. Restart Blender (clears any stale TCP listener on port 9876)
+
+**Install the nimble add-on:**
+
+1. Blender → `Edit → Preferences → Add-ons → Install`
+2. Select `blender_addon/blender_mcp_nimble_addon.py` from this repo
+3. Enable the checkbox (`Interface: Blender MCP (nimble)`)
+4. Open the 3D Viewport sidebar (press `N`), find the **BlenderMCP** tab, click **Connect to Claude**
+
+The add-on opens a TCP listener on port 9876 (configurable from the panel). The MCP server (running outside Blender as `blender-mcp-nimble`) connects to it.
 
 ## MCP client config
 
