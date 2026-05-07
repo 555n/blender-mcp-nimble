@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "blender-mcp-nimble"
+version = "0.1.0"
+description = "Construct-native fork of blender-mcp — 4 core tools, no telemetry, no asset-marketplace bloat."
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.0.0",
+]
+
+[project.scripts]
+blender-mcp-nimble = "blender_mcp_nimble.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
